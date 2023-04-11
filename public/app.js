@@ -1,2 +1,68 @@
 "use strict";
-console.log("hello world!");
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+function autobind(target, methodName, descriptor) {
+    const originalMethod = descriptor.value;
+    const adjDescriptor = {
+        configurable: true,
+        get() {
+            const boundFn = originalMethod.bind(this);
+            return boundFn;
+        }
+    };
+    return adjDescriptor;
+}
+class ProjectInput {
+    constructor() {
+        this.templateElement = document.getElementById("project-input");
+        this.hostElement = document.getElementById("app");
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild;
+        this.element.id = "user-input";
+        this.titleInput = this.element.querySelector("#title");
+        this.descriptionInput = this.element.querySelector("#description");
+        this.peopleInput = this.element.querySelector("#people");
+        this.configure();
+        this.attach();
+    }
+    gatherUserInput() {
+        const title = this.titleInput.value;
+        const description = this.descriptionInput.value;
+        const people = this.peopleInput.value;
+        if (title.trim().length === 0 || description.trim().length === 0 || people.trim().length === 0) {
+            alert("Invalid Input!");
+            return;
+        }
+        else {
+            return [title, description, +people];
+        }
+    }
+    clearInputs() {
+        this.titleInput.value = "";
+        this.descriptionInput.value = "";
+        this.peopleInput.value = "";
+    }
+    submitHandler(e) {
+        e.preventDefault();
+        const userInput = this.gatherUserInput();
+        if (userInput) {
+            const [title, description, input] = userInput;
+            console.log(title, description, input);
+            this.clearInputs();
+        }
+    }
+    configure() {
+        this.element.addEventListener("submit", this.submitHandler);
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement("afterbegin", this.element);
+    }
+}
+__decorate([
+    autobind
+], ProjectInput.prototype, "submitHandler", null);
+const prjInput = new ProjectInput();
