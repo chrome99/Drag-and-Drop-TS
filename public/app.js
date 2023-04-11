@@ -5,6 +5,30 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+function validate(input) {
+    let isValid = true;
+    if (input.required) {
+        isValid = isValid && input.value.toString().trim().length !== 0;
+    }
+    if (typeof input.value === "string") {
+        if (input.min != null) {
+            isValid = isValid && input.value.length >= input.min;
+        }
+        if (input.max != null) {
+            isValid = isValid && input.value.length <= input.max;
+        }
+    }
+    if (typeof input.value === "number") {
+        if (input.min != null) {
+            isValid = isValid && input.value >= input.min;
+        }
+        if (input.max != null) {
+            isValid = isValid && input.value <= input.max;
+        }
+    }
+    return isValid;
+}
+//autobind
 function autobind(target, methodName, descriptor) {
     const originalMethod = descriptor.value;
     const adjDescriptor = {
@@ -16,6 +40,28 @@ function autobind(target, methodName, descriptor) {
     };
     return adjDescriptor;
 }
+//project list
+class ProjectList {
+    constructor(type) {
+        this.type = type;
+        this.templateElement = document.getElementById("project-list");
+        this.hostElement = document.getElementById("app");
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild;
+        this.element.id = `${this.type}-projects`;
+        this.attach();
+        this.renderContent();
+    }
+    renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector("ul").id = listId;
+        this.element.querySelector("h2").textContent = this.type.toUpperCase() + " PROJECTS";
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement("beforeend", this.element);
+    }
+}
+//project input
 class ProjectInput {
     constructor() {
         this.templateElement = document.getElementById("project-input");
@@ -33,12 +79,14 @@ class ProjectInput {
         const title = this.titleInput.value;
         const description = this.descriptionInput.value;
         const people = this.peopleInput.value;
-        if (title.trim().length === 0 || description.trim().length === 0 || people.trim().length === 0) {
-            alert("Invalid Input!");
-            return;
+        if (validate({ value: title, required: true }) &&
+            validate({ value: description, required: true, min: 5 }) &&
+            validate({ value: +people, required: true, min: 1, max: 5 })) {
+            return [title, description, +people];
         }
         else {
-            return [title, description, +people];
+            alert("Invalid Input!");
+            return;
         }
     }
     clearInputs() {
@@ -66,3 +114,5 @@ __decorate([
     autobind
 ], ProjectInput.prototype, "submitHandler", null);
 const prjInput = new ProjectInput();
+const activeList = new ProjectList("active");
+const finishedList = new ProjectList("finished");
