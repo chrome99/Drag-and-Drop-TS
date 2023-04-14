@@ -46,6 +46,16 @@ class ProjectState extends State {
     addProject(title, description, people) {
         const newProject = new Project(Math.random().toString(), title, description, people, ProjectStatus.Active);
         this.projects.push(newProject);
+        this.updatelisteners();
+    }
+    moveProject(projectId, newStatus) {
+        const project = this.projects.find(prj => prj.id === projectId);
+        if (project && project.status !== newStatus) {
+            project.status = newStatus;
+            this.updatelisteners();
+        }
+    }
+    updatelisteners() {
         for (const listenerFn of this.listeners) {
             listenerFn(this.projects.slice()); //call function with a copy of array
         }
@@ -103,6 +113,44 @@ class Component {
         this.hostElement.insertAdjacentElement(insertAtStart ? "afterbegin" : "beforeend", this.element);
     }
 }
+//project item
+class ProjectItem extends Component {
+    get persons() {
+        if (this.project.people === 1) {
+            return "1 Person";
+        }
+        else {
+            return this.project.people + " Persons";
+        }
+    }
+    constructor(hostId, project) {
+        super("single-project", hostId, false, project.id);
+        this.project = project;
+        this.configure();
+        this.renderContent();
+    }
+    dragStartHandler(event) {
+        event.dataTransfer.setData("text/plain", this.project.id);
+        event.dataTransfer.effectAllowed = "move";
+    }
+    ;
+    dragEndHandler(event) {
+        // console.log("Drag End");
+    }
+    ;
+    configure() {
+        this.element.addEventListener("dragstart", this.dragStartHandler);
+        this.element.addEventListener("dragend", this.dragEndHandler);
+    }
+    renderContent() {
+        this.element.querySelector("h2").textContent = this.project.title;
+        this.element.querySelector("h3").textContent = this.persons + " Assigned";
+        this.element.querySelector("p").textContent = this.project.description;
+    }
+}
+__decorate([
+    autobind
+], ProjectItem.prototype, "dragStartHandler", null);
 //project list
 class ProjectList extends Component {
     constructor(type) {
@@ -112,7 +160,27 @@ class ProjectList extends Component {
         this.configure();
         this.renderContent();
     }
+    dragOverHandler(event) {
+        if (event.dataTransfer && event.dataTransfer.types[0] === "text/plain") {
+            event.preventDefault();
+            const list = this.element.querySelector("ul");
+            list.classList.add("droppable");
+        }
+    }
+    dropHandler(event) {
+        const list = this.element.querySelector("ul");
+        list.classList.remove("droppable");
+        const prjID = event.dataTransfer.getData("text/plain");
+        projectState.moveProject(prjID, this.type === "active" ? ProjectStatus.Active : ProjectStatus.Finished);
+    }
+    dragLeaveHandler(event) {
+        const list = this.element.querySelector("ul");
+        list.classList.remove("droppable");
+    }
     configure() {
+        this.element.addEventListener("dragover", this.dragOverHandler);
+        this.element.addEventListener("drop", this.dropHandler);
+        this.element.addEventListener("dragleave", this.dragLeaveHandler);
         projectState.addListener((projects) => {
             const relevantProjects = projects.filter((project) => {
                 if (this.type === "active" && project.status === ProjectStatus.Active) {
@@ -135,12 +203,19 @@ class ProjectList extends Component {
         const list = document.getElementById(`${this.type}-projects-list`);
         list.innerHTML = "";
         for (const project of this.assignedProjects) {
-            const item = document.createElement("li");
-            item.textContent = project.title;
-            list.appendChild(item);
+            new ProjectItem(list.id, project);
         }
     }
 }
+__decorate([
+    autobind
+], ProjectList.prototype, "dragOverHandler", null);
+__decorate([
+    autobind
+], ProjectList.prototype, "dropHandler", null);
+__decorate([
+    autobind
+], ProjectList.prototype, "dragLeaveHandler", null);
 //project input
 class ProjectInput extends Component {
     constructor() {
